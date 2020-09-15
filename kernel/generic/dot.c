@@ -52,19 +52,20 @@ FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
 #elif V_SIMD_F64 && defined(DSDOT)
 		v_f64 t;
 		double dstX[8], dstY[8];
-#endif
+#else
 		int n1 = n & -4;
+#endif
 
 #if V_SIMD && !defined(DSDOT)
 		const int vsteps = v_nlanes_f32;
-		const vcount = n - n % vsteps;
+		const int vcount = n - n % vsteps;
 		for (; i < vcount; i += vsteps) {
 			t = v_mul_f32(v_load_f32(x + i), v_load_f32(y + i));
 			dot += v_sum_f32(t);
 		}
 #elif V_SIMD_F64 && defined(DSDOT)
 		const int vsteps = v_nlanes_f64;
-		const vcount = n - n % vsteps;
+		const int vcount = n - n % vsteps;
 		for (; i < vcount; i += vsteps) {
 			for (int j = 0; j < vsteps; j++) {
 				*(dstX + j) = (double)*(x + i + j);
@@ -74,7 +75,7 @@ FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
 			dot += v_sum_f64(t);
 		}
 #elif defined(DSDOT)
-		for (;i < n1; i+=4)
+		for (; i < n1; i += 4)
 		{
 			dot += (double)y[i] * (double)x[i]
 				+ (double)y[i + 1] * (double)x[i + 1]

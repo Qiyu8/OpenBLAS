@@ -13,7 +13,7 @@ arithmetic
 #define v_mul_f32 _mm512_mul_ps
 #define v_mul_f64 _mm512_mul_pd
 
-#ifdef NPY_HAVE_AVX512F_REDUCE
+#ifdef HAVE_AVX512F_REDUCE
 #define v_sum_f32 _mm512_reduce_add_ps
 #define v_sum_f64 _mm512_reduce_add_pd
 #else

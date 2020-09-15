@@ -42,7 +42,7 @@ extern "C" {
 #include <tmmintrin.h>
 #endif
 /** SSE41 **/
-#ifdef HAVE_SSE41
+#ifdef HAVE_SSE4_1
 #include <smmintrin.h>
 #endif
 /** POPCNT **/
@@ -61,7 +61,7 @@ extern "C" {
 #endif
 
 // distribute
-#ifdef HAVE_AVX512F
+#if defined(HAVE_AVX512VL) || defined(HAVE_AVX512BF16)
 #include "intrin_avx512.h"
 #elif defined(HAVE_AVX2)
 #include "intrin_avx.h"

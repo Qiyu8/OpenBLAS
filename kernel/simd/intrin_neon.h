@@ -16,8 +16,8 @@ typedef float64x2_t v_f64;
 /*
 arithmetic
 */
-#define npyv_mul_f32 vmulq_f32
-#define npyv_mul_f64 vmulq_f64
+#define v_mul_f32 vmulq_f32
+#define v_mul_f64 vmulq_f64
 
 // Horizontal add: Calculates the sum of all vector elements.
 BLAS_FINLINE float v_sum_f32(float32x4_t a)
