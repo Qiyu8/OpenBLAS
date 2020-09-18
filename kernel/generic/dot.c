@@ -47,18 +47,11 @@ FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
 
 	if ((inc_x == 1) && (inc_y == 1))
 	{
-#if V_SIMD && !defined(DSDOT)
-		v_f32 t;
-#elif V_SIMD_F64 && defined(DSDOT)
-		v_f64 t;
-		double dstX[8], dstY[8];
-#else
 		int n1 = n & -4;
-#endif
-
 #if V_SIMD && !defined(DSDOT)
 		const int vsteps = v_nlanes_f32;
 		const int vcount = n - n % vsteps;
+		v_f32 t;
 		for (; i < vcount; i += vsteps) {
 			t = v_mul_f32(v_load_f32(x + i), v_load_f32(y + i));
 			dot += v_sum_f32(t);
@@ -66,12 +59,19 @@ FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
 #elif V_SIMD_F64 && defined(DSDOT)
 		const int vsteps = v_nlanes_f64;
 		const int vcount = n - n % vsteps;
+		v_f64 t;
 		for (; i < vcount; i += vsteps) {
-			for (int j = 0; j < vsteps; j++) {
-				*(dstX + j) = (double)*(x + i + j);
-				*(dstY + j) = (double)*(y + i + j);
-			}
-			t = v_mul_f64(v_load_f64(dstX), v_load_f64(dstY));
+		#if V_SIMD == 128
+			t = v_mul_f64(v_set_f64(x[i], x[i + 1]), v_set_f64(y[i], y[i + 1]));
+		#elif V_SIMD == 256
+			t = v_mul_f64(v_set_f64(x[i], x[i + 1],  x[i + 2], x[i + 3]),
+						v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3]));
+		#elif V_SIMD == 512
+			t = v_mul_f64(v_set_f64(x[i], x[i + 1], x[i + 2], x[i + 3],
+				x[i + 4], x[i + 5], x[i + 6], x[i + 7]),
+				v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3],
+					y[i + 4], y[i + 5], y[i + 6], y[i + 7]));
+		#endif
 			dot += v_sum_f64(t);
 		}
 #elif defined(DSDOT)

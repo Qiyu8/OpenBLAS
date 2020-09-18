@@ -1,6 +1,6 @@
 #ifndef _INTRIN_H_
 #define _INTRIN_H_
-
+#include "intrin_utils.h"
 #if defined(_MSC_VER)
 #define BLAS_INLINE __inline
 #elif defined(__GNUC__)

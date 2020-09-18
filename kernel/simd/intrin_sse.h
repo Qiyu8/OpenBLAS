@@ -43,3 +43,9 @@ memory
 // unaligned load
 #define v_load_f32 _mm_loadu_ps
 #define v_load_f64 _mm_loadu_pd
+BLAS_FINLINE __m128d v__setr_pd(double i0, double i1)
+{
+    return _mm_setr_pd(i0, i1);
+}
+#define v_setf_f64(FILL, ...) v__setr_pd(V__SET_FILL_2(double, FILL, __VA_ARGS__))
+#define v_set_f64(...) v_setf_f64(0, __VA_ARGS__)

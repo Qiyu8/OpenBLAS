@@ -46,3 +46,10 @@ memory
 // unaligned load
 #define v_load_f32(PTR) _mm512_loadu_ps((const __m512*)(PTR))
 #define v_load_f64(PTR) _mm512_loadu_pd((const __m512d*)(PTR))
+BLAS_FINLINE __m512d v__setr_pd(double i0, double i1, double i2, double i3,
+    double i4, double i5, double i6, double i7)
+{
+    return _mm512_setr_pd(i0, i1, i2, i3, i4, i5, i6, i7);
+}
+#define v_setf_f64(FILL, ...) v__setr_pd(V__SET_FILL_8(double, FILL, __VA_ARGS__))
+#define v_set_f64(...) v_setf_f64(0, __VA_ARGS__)
