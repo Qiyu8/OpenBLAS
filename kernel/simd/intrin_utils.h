@@ -22,5 +22,4 @@
 
 #define V__SET_FILL_8(CAST, F, ...) EXPAND(V__SET_8(CAST, __VA_ARGS__, F, F, F, F, F, F, F, F))
 
-
 #endif

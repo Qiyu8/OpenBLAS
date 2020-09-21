@@ -29,9 +29,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common.h"
 #include "../simd/intrin.h"
 #if defined(DSDOT)
-double CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
+double CNAME(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
 #else
-FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
+FLOAT CNAME(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
 #endif
 {
 	BLASLONG i = 0;
@@ -56,14 +56,12 @@ FLOAT CNAME(BLASLONG n, FLOAT* x, BLASLONG inc_x, FLOAT* y, BLASLONG inc_y)
 			t = v_mul_f32(v_load_f32(x + i), v_load_f32(y + i));
 			dot += v_sum_f32(t);
 		}
-#elif V_SIMD_F64 && defined(DSDOT)
+#elif V_SIMD_F64 && defined(DSDOT) && V_SIMD > 128
 		const int vsteps = v_nlanes_f64;
 		const int vcount = n - n % vsteps;
 		v_f64 t;
 		for (; i < vcount; i += vsteps) {
-		#if V_SIMD == 128
-			t = v_mul_f64(v_set_f64(x[i], x[i + 1]), v_set_f64(y[i], y[i + 1]));
-		#elif V_SIMD == 256
+		#if V_SIMD == 256
 			t = v_mul_f64(v_set_f64(x[i], x[i + 1],  x[i + 2], x[i + 3]),
 						v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3]));
 		#elif V_SIMD == 512

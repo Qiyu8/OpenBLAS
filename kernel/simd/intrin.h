@@ -45,10 +45,6 @@ extern "C" {
 #ifdef HAVE_SSE4_1
 #include <smmintrin.h>
 #endif
-/** POPCNT **/
-#ifdef HAVE_POPCNT
-#include <nmmintrin.h>
-#endif
 
 /** AVX **/
 #ifdef HAVE_AVX
