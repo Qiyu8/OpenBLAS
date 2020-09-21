@@ -37,3 +37,12 @@ memory
 // unaligned load
 #define v_load_f32(a) vld1q_f32((const float*)a)
 #define v_load_f64(a) vld1q_f64((const double*)a)
+#ifdef __aarch64__
+BLAS_FINLINE float64x2_t v__set_f64(double i0, double i1)
+{
+    const double DECL_ALIGNED(16) data[2] = {i0, i1};
+    return vld1q_f64(data);
+}
+#define v_setf_f64(FILL, ...) v__set_f64(V__SET_FILL_2(double, FILL, __VA_ARGS__))
+#define v_set_f64(...) v_setf_f64(0, __VA_ARGS__)
+#endif
