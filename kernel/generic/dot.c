@@ -27,78 +27,96 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "common.h"
-
+#include "../simd/intrin.h"
 #if defined(DSDOT)
 double CNAME(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
 #else
 FLOAT CNAME(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
 #endif
 {
-	BLASLONG i=0;
-	BLASLONG ix=0,iy=0;
+	BLASLONG i = 0;
+	BLASLONG ix = 0, iy = 0;
 
 #if defined(DSDOT)
-	double dot = 0.0 ;
+	double dot = 0.0;
 #else
-	FLOAT  dot = 0.0 ;
+	FLOAT  dot = 0.0;
 #endif
 
-	if ( n < 0 )  return(dot);
+	if (n < 0)  return(dot);
 
-	if ( (inc_x == 1) && (inc_y == 1) )
+	if ((inc_x == 1) && (inc_y == 1))
 	{
-
 		int n1 = n & -4;
-
-		while(i < n1)
-		{
-
-#if defined(DSDOT)
-			dot += (double) y[i] * (double) x[i]
-			    + (double) y[i+1] * (double) x[i+1]
-			    + (double) y[i+2] * (double) x[i+2]
-			    + (double) y[i+3] * (double) x[i+3] ;
-#else
-			dot += y[i] * x[i]
-			    + y[i+1] * x[i+1]
-			    + y[i+2] * x[i+2]
-			    + y[i+3] * x[i+3] ;
-#endif
-			i+=4 ;
-
+#if V_SIMD && !defined(DSDOT)
+		const int vsteps = v_nlanes_f32;
+		const int vcount = n - n % vsteps;
+		v_f32 t;
+		for (; i < vcount; i += vsteps) {
+			t = v_mul_f32(v_load_f32(x + i), v_load_f32(y + i));
+			dot += v_sum_f32(t);
 		}
+#elif V_SIMD_F64 && defined(DSDOT) && V_SIMD > 128
+		const int vsteps = v_nlanes_f64;
+		const int vcount = n - n % vsteps;
+		v_f64 t;
+		for (; i < vcount; i += vsteps) {
+		#if V_SIMD == 256
+			t = v_mul_f64(v_set_f64(x[i], x[i + 1],  x[i + 2], x[i + 3]),
+						v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3]));
+		#elif V_SIMD == 512
+			t = v_mul_f64(v_set_f64(x[i], x[i + 1], x[i + 2], x[i + 3],
+				x[i + 4], x[i + 5], x[i + 6], x[i + 7]),
+				v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3],
+					y[i + 4], y[i + 5], y[i + 6], y[i + 7]));
+		#endif
+			dot += v_sum_f64(t);
+		}
+#elif defined(DSDOT)
+		for (; i < n1; i += 4)
+		{
+			dot += (double)y[i] * (double)x[i]
+				+ (double)y[i + 1] * (double)x[i + 1]
+				+ (double)y[i + 2] * (double)x[i + 2]
+				+ (double)y[i + 3] * (double)x[i + 3];
+		}
+#else
+		for (; i < n1; i += 4)
+		{
+			dot += y[i] * x[i]
+				+ y[i + 1] * x[i + 1]
+				+ y[i + 2] * x[i + 2]
+				+ y[i + 3] * x[i + 3];
+		}
+#endif
 
-		while(i < n)
+		while (i < n)
 		{
 
 #if defined(DSDOT)
-			dot += (double) y[i] * (double) x[i] ;
+			dot += (double)y[i] * (double)x[i];
 #else
-			dot += y[i] * x[i] ;
+			dot += y[i] * x[i];
 #endif
-			i++ ;
+			i++;
 
 		}
 		return(dot);
-
-
 	}
 
-	while(i < n)
+	while (i < n)
 	{
 
 #if defined(DSDOT)
-		dot += (double) y[iy] * (double) x[ix] ;
+		dot += (double)y[iy] * (double)x[ix];
 #else
-		dot += y[iy] * x[ix] ;
+		dot += y[iy] * x[ix];
 #endif
-		ix  += inc_x ;
-		iy  += inc_y ;
-		i++ ;
+		ix += inc_x;
+		iy += inc_y;
+		i++;
 
 	}
 	return(dot);
 
 }
-
-
