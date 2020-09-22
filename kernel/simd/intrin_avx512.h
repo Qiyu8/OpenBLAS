@@ -5,13 +5,19 @@ Data Type
 */
 typedef __m512  v_f32;
 typedef __m512d v_f64;
+typedef struct { __m512d val[2]; } v_f64x2;
 #define v_nlanes_f32 16
 #define v_nlanes_f64 8
 /*
 arithmetic
 */
+#define v_add_f32 _mm512_add_ps
+#define v_add_f64 _mm512_add_pd
 #define v_mul_f32 _mm512_mul_ps
 #define v_mul_f64 _mm512_mul_pd
+// multiply and add, a*b + c
+#define v_muladd_f32 _mm512_fmadd_ps
+#define v_muladd_f64 _mm512_fmadd_pd
 
 #ifdef HAVE_AVX512F_REDUCE
 #define v_sum_f32 _mm512_reduce_add_ps
@@ -44,8 +50,8 @@ BLAS_FINLINE double v_sum_f64(v_f64 a)
 memory
 */
 // unaligned load
-#define v_load_f32(PTR) _mm512_loadu_ps((const __m512*)(PTR))
-#define v_load_f64(PTR) _mm512_loadu_pd((const __m512d*)(PTR))
+#define v_loadu_f32(PTR) _mm512_loadu_ps((const __m512*)(PTR))
+#define v_loadu_f64(PTR) _mm512_loadu_pd((const __m512d*)(PTR))
 BLAS_FINLINE __m512d v__setr_pd(double i0, double i1, double i2, double i3,
     double i4, double i5, double i6, double i7)
 {
@@ -53,3 +59,17 @@ BLAS_FINLINE __m512d v__setr_pd(double i0, double i1, double i2, double i3,
 }
 #define v_setf_f64(FILL, ...) v__setr_pd(V__SET_FILL_8(double, FILL, __VA_ARGS__))
 #define v_set_f64(...) v_setf_f64(0, __VA_ARGS__)
+#define v_zero_f32 _mm512_setzero_ps
+#define v_zero_f64 _mm512_setzero_pd
+
+/*
+convert
+*/
+BLAS_FINLINE v_f64x2 v_cvt_f64_f32(__m512 a) {
+    v_f64x2 r;
+    __m256 low  = _mm512_castps512_ps256(a);
+    __m256 high = _mm256_castpd_ps(_mm512_extractf64x4_pd(_mm512_castps_pd(a),1));
+    r.val[0] = _mm512_cvtps_pd(low);
+    r.val[1] = _mm512_cvtps_pd(high);
+    return r;
+}

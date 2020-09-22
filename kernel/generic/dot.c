@@ -49,29 +49,53 @@ FLOAT CNAME(BLASLONG n, FLOAT *x, BLASLONG inc_x, FLOAT *y, BLASLONG inc_y)
 	{
 		int n1 = n & -4;
 #if V_SIMD && !defined(DSDOT)
-		const int vsteps = v_nlanes_f32;
-		const int vcount = n - n % vsteps;
-		v_f32 t;
-		for (; i < vcount; i += vsteps) {
-			t = v_mul_f32(v_load_f32(x + i), v_load_f32(y + i));
-			dot += v_sum_f32(t);
-		}
+		const int vstep = v_nlanes_f32;
+        const int unrollx4 = n & (-vstep * 4);
+        const int unrollx  = n &  -vstep;
+		v_f32 vsum0 = v_zero_f32();
+        v_f32 vsum1 = v_zero_f32();
+        v_f32 vsum2 = v_zero_f32();
+        v_f32 vsum3 = v_zero_f32();
+		while(i < unrollx4)
+        {
+            vsum0 = v_muladd_f32(
+                v_loadu_f32(x + i),           v_loadu_f32(y + i),           vsum0
+            );
+            vsum1 = v_muladd_f32(
+                v_loadu_f32(x + i + vstep),   v_loadu_f32(y + i + vstep),   vsum1
+            );
+            vsum2 = v_muladd_f32(
+                v_loadu_f32(x + i + vstep*2), v_loadu_f32(y + i + vstep*2), vsum2
+            );
+            vsum3 = v_muladd_f32(
+                v_loadu_f32(x + i + vstep*3), v_loadu_f32(y + i + vstep*3), vsum3
+            );
+            i += vstep*4;
+        }
+        vsum0 = v_add_f32(
+            v_add_f32(vsum0, vsum1), v_add_f32(vsum2 , vsum3)
+        );
+		while(i < unrollx)
+        {
+            vsum0 = v_muladd_f32(
+                v_loadu_f32(x + i), v_loadu_f32(y + i), vsum0
+            );
+            i += vstep;
+        }
+        dot = v_sum_f32(vsum0);
 #elif V_SIMD_F64 && defined(DSDOT) && V_SIMD > 128
-		const int vsteps = v_nlanes_f64;
-		const int vcount = n - n % vsteps;
-		v_f64 t;
-		for (; i < vcount; i += vsteps) {
-		#if V_SIMD == 256
-			t = v_mul_f64(v_set_f64(x[i], x[i + 1],  x[i + 2], x[i + 3]),
-						v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3]));
-		#elif V_SIMD == 512
-			t = v_mul_f64(v_set_f64(x[i], x[i + 1], x[i + 2], x[i + 3],
-				x[i + 4], x[i + 5], x[i + 6], x[i + 7]),
-				v_set_f64(y[i], y[i + 1], y[i + 2], y[i + 3],
-					y[i + 4], y[i + 5], y[i + 6], y[i + 7]));
-		#endif
-			dot += v_sum_f64(t);
-		}
+		v_f64 vsum0 = v_zero_f64();
+        v_f64 vsum1 = v_zero_f64();
+        int unrollx = n & -v_nlanes_f32;
+        while(i < unrollx)
+        {
+            v_f64x2 vx = v_cvt_f64_f32(v_loadu_f32(x + i));
+            v_f64x2 vy = v_cvt_f64_f32(v_loadu_f32(y + i));
+            vsum0 = v_muladd_f64(vx.val[0], vy.val[0], vsum0);
+            vsum1 = v_muladd_f64(vx.val[1], vy.val[1], vsum1);
+            i += v_nlanes_f32;
+        }
+        dot = v_sum_f64(v_add_f64(vsum0, vsum1));
 #elif defined(DSDOT)
 		for (; i < n1; i += 4)
 		{

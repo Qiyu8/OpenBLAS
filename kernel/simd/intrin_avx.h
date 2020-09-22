@@ -5,14 +5,29 @@ Data Type
 */
 typedef __m256  v_f32;
 typedef __m256d v_f64;
+typedef struct { __m256d val[2]; } v_f64x2;
 #define v_nlanes_f32 8
 #define v_nlanes_f64 4
 /*
 arithmetic
 */
-
+#define v_add_f32 _mm256_add_ps
+#define v_add_f64 _mm256_add_pd
 #define v_mul_f32 _mm256_mul_ps
 #define v_mul_f64 _mm256_mul_pd
+
+#ifdef NPY_HAVE_FMA3
+    // multiply and add, a*b + c
+    #define v_muladd_f32 _mm256_fmadd_ps
+    #define v_muladd_f64 _mm256_fmadd_pd
+#else
+    // multiply and add, a*b + c
+    BLAS_FINLINE v_f32 v_muladd_f32(v_f32 a, v_f32 b, v_f32 c)
+    { return v_add_f32(v_mul_f32(a, b), c); }
+    BLAS_FINLINE v_f64 v_muladd_f64(v_f64 a, v_f64 b, v_f64 c)
+    { return v_add_f64(v_mul_f64(a, b), c); }
+#endif // !NPY_HAVE_FMA3
+
 // Horizontal add: Calculates the sum of all vector elements.
 BLAS_FINLINE float v_sum_f32(__m256 a)
 {
@@ -36,11 +51,22 @@ BLAS_FINLINE double v_sum_f64(__m256d a)
 memory
 */
 // unaligned load
-#define v_load_f32 _mm256_loadu_ps
-#define v_load_f64 _mm256_loadu_pd
+#define v_loadu_f32 _mm256_loadu_ps
+#define v_loadu_f64 _mm256_loadu_pd
 BLAS_FINLINE __m256d v__setr_pd(double i0, double i1, double i2, double i3)
 {
     return _mm256_setr_pd(i0, i1, i2, i3);
 }
 #define v_setf_f64(FILL, ...) v__setr_pd(V__SET_FILL_4(double, FILL, __VA_ARGS__))
 #define v_set_f64(...) v_setf_f64(0, __VA_ARGS__)
+#define v_zero_f32 _mm256_setzero_ps
+#define v_zero_f64 _mm256_setzero_pd
+/*
+convert
+*/
+BLAS_FINLINE v_f64x2 v_cvt_f64_f32(__m256 a) {
+    v_f64x2 r;
+    r.val[0] = _mm256_cvtps_pd(_mm256_extractf128_ps(a, 0));
+    r.val[1] = _mm256_cvtps_pd(_mm256_extractf128_ps(a, 1));
+    return r;
+}
