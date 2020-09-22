@@ -78,7 +78,7 @@ convert
 BLAS_FINLINE v_f64x2 v_cvt_f64_f32(float32x4_t a) {
     v_f64x2 r;
     r.val[0] = vcvt_f64_f32(vget_low_f32(a));
-    r.val[1] = vcvt_f64_f32(vget_high_f32(a)));
+    r.val[1] = vcvt_f64_f32(vget_high_f32(a));
     return r;
 }
 #endif
